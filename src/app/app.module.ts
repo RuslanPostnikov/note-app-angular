@@ -9,6 +9,7 @@ import { NoteCardComponent } from './note-card/note-card.component';
 import { NoteDetailsComponent } from './pages/note-details/note-details.component';
 import {FormsModule} from "@angular/forms";
 import {CommonModule} from "@angular/common";
+import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
 
 @NgModule({
   declarations: [
@@ -22,7 +23,8 @@ import {CommonModule} from "@angular/common";
     BrowserModule,
     AppRoutingModule,
     FormsModule,
-    CommonModule
+    CommonModule,
+    BrowserAnimationsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

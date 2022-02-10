@@ -27,9 +27,7 @@ export class NoteDetailsComponent implements OnInit {
     this.route.params.subscribe((params: Params) => {
       this.note = new Note();
       if(params['id']) {
-        console.log(typeof params['id'], params['id'])
         this.note = this.noteService.get(+params['id']);
-        console.log(this.note);
         this.noteId = +params['id'];
         this.new = false;
       } else {
