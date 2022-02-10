@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {Note} from "../../shared/note.model";
 import {NotesService} from "../../shared/notes.service";
 import {animate, query, stagger, style, transition, trigger} from "@angular/animations";
@@ -81,43 +81,56 @@ import {animate, query, stagger, style, transition, trigger} from "@angular/anim
 export class NotesListComponent implements OnInit {
 
   notes: Note[] = new Array<Note>();
-
   filteredNotes: Note[] = new Array<Note>();
+  @ViewChild('filterInput') filterInputElRef!: ElementRef<HTMLInputElement>;
 
   constructor(private noteService: NotesService) { }
 
   ngOnInit(): void {
   //  We want to retrieve all notes from note Service
     this.notes = this.noteService.getAll();
-    this.filteredNotes = this.notes;
+    // this.filteredNotes = this.noteService.getAll();
+    this.filter('');
   }
 
-  deleteNote(id: number) {
-    this.noteService.delete(id);
+  getValue(event: Event): string {
+    return (event.target as HTMLInputElement).value;
+  }
+
+  deleteNote(note: Note) {
+    let noteId = this.noteService.getId(note);
+    this.noteService.delete(noteId);
+    this.filter(this.filterInputElRef.nativeElement.value);
+  }
+
+  generateNoteURL(note: Note) {
+    return this.noteService.getId(note)
   }
 
   filter(query: string) {
-      query = query.toLowerCase().trim();
+    query = query.toLowerCase().trim();
 
-      let allResults = new Array<Note>();
-      //  split up the search query into individual words
-      let terms: string[] = query.split(' ') // split on spaces
-      //   remove duplicate search terms
-      terms = this.removeDuplicates(terms);
-      //  compile all relevant results into allResults array
-      terms.forEach(term => {
-        let results: Array<Note> = this.relevantNotes(term);
-        //  append results to the AllResults array
-        allResults = [...allResults, ...results];
-      });
+    let allResults = new Array<Note>();
+    //  split up the search query into individual words
+    let terms: string[] = query.split(' ') // split on spaces
+    //   remove duplicate search terms
+    terms = this.removeDuplicates(terms);
+    //  compile all relevant results into allResults array
+    terms.forEach(term => {
+      let results: Array<Note> = this.relevantNotes(term);
+      //  append results to the AllResults array
+      allResults = [...allResults, ...results];
+    });
 
-      //  allResults will include duplicate notes
-      //  because a particular note can be result of many search terms
-      //  but we don't want to show the same note multiple times on the UI
-      //  so we first must remove duplicates
-      let uniqueResults = this.removeDuplicates(allResults);
+    //  allResults will include duplicate notes
+    //  because a particular note can be result of many search terms
+    //  but we don't want to show the same note multiple times on the UI
+    //  so we first must remove duplicates
+    let uniqueResults = this.removeDuplicates(allResults);
+    this.filteredNotes = uniqueResults;
 
-      this.filteredNotes = uniqueResults;
+    // now sort by relevancy
+    this.sortByRelevancy(allResults);
   }
 
   removeDuplicates(arr: Array<any>): Array<any> {
@@ -138,8 +151,29 @@ export class NotesListComponent implements OnInit {
     return relevantNotes;
   }
 
-  getValue(event: Event): string {
-    return (event.target as HTMLInputElement).value;
+  sortByRelevancy(searchResults: Note[]) {
+    //  this method will calculate the relevancy of a note based on
+    //  the number of times it appears in the search results
+    let noteCountObj: any = {}; // format - key: value => NoteId: number (note object id : count)
+
+    searchResults.forEach(note => {
+      let noteId = this.noteService.getId(note) // get notes id
+      if(noteCountObj[noteId]) {
+        noteCountObj[noteId] += 1;
+      } else {
+        noteCountObj[noteId] = 1;
+      }
+    })
+
+    this.filteredNotes = this.filteredNotes.sort((a: Note, b: Note) => {
+      let aId = this.noteService.getId(a);
+      let bId = this.noteService.getId(b);
+
+      let aCount = noteCountObj[aId];
+      let bCount = noteCountObj[bId];
+
+      return bCount - aCount;
+    })
   }
 
 }
